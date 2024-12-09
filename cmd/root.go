@@ -4,7 +4,6 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -26,6 +25,8 @@ cypress-parallel-go is a binary written in go that runs cypress specs in "parall
 		tool, tool_err := cmd.Flags().GetString("tool")
 		dir, dir_err := cmd.Flags().GetString("dir")
 		cyArgs, args_err := cmd.Flags().GetString("args")
+		script, script_err := cmd.Flags().GetString("script")
+
 		if tool_err != nil {
 			return tool_err
 		}
@@ -37,12 +38,13 @@ cypress-parallel-go is a binary written in go that runs cypress specs in "parall
 			return args_err
 		}
 
-		if tool != "docker" && tool != "yarn" {
-			return errors.New("invalid value for --tool or -t; must be 'docker' or 'yarn'")
+		if script_err != nil {
+			return script_err
 		}
+
 		start := time.Now()
 
-		if err := core.Run(tool, dir, cyArgs); err != nil {
+		if err := core.Run(tool, dir, script, cyArgs); err != nil {
 			return err
 		}
 

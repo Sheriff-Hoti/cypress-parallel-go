@@ -17,7 +17,7 @@ type Command struct {
 	args []string
 }
 
-func Run(tool string, dir string, cyArgs string) error {
+func Run(tool string, dir string, script string, cyArgs string) error {
 
 	//getting the folders which match the 'dir' pattern
 	matches, mError := filepath.Glob(dir)
@@ -40,7 +40,7 @@ func Run(tool string, dir string, cyArgs string) error {
 	for _, spec := range matches {
 		go func() {
 			defer wg.Done()
-			command, err := buildCommand(tool, spec)
+			command, err := buildCommand(tool, script, spec, []string{cyArgs})
 
 			if err != nil {
 				log.Fatal(err)
@@ -60,10 +60,13 @@ func Run(tool string, dir string, cyArgs string) error {
 			runErr := cmd.Run()
 
 			if runErr != nil {
-				log.Printf("Error running test %s: %v\n", spec, err)
+				log.Printf("Error running test %s: %v\n", spec, runErr)
 			} else {
 				log.Printf("Finished running command %s", cmd.String())
 			}
+
+			log.Print("success:", cmdOut.String())
+			log.Print("error:", cmdErr.String())
 
 			outputChan <- append(cmdErr.Bytes(), cmdOut.Bytes()...)
 
@@ -93,11 +96,20 @@ func Run(tool string, dir string, cyArgs string) error {
 	return nil
 }
 
-func buildCommand(tool string, specFile string) (*Command, error) {
+func buildCommand(tool string, script string, specFile string, cyArgs []string) (*Command, error) {
 
 	switch tool {
 	case "yarn":
-		return nil, errors.New("yarn not implemented")
+		//TODO add the spec file
+		return &Command{
+			tool: tool,
+			args: append([]string{"run", script, "--spec", specFile}, cyArgs...),
+		}, nil
+	case "npx yarn":
+		return &Command{
+			tool: "npx",
+			args: append([]string{"yarn", "run", script, "--spec", specFile}, cyArgs...),
+		}, nil
 	case "docker":
 		dirs := strings.Split(filepath.Clean(specFile), "/")
 
@@ -109,8 +121,15 @@ func buildCommand(tool string, specFile string) (*Command, error) {
 			tool: tool,
 			args: []string{"run", "-i", "-v", fmt.Sprintf("./%s:/e2e", baseDir), "-w", "/e2e", "cypress/included:13.15.0", "-s", rest},
 		}, nil
+		//TODO test the npm and docker -t flag
+	case "npm":
+		return &Command{
+			tool: tool,
+			args: append([]string{"run", script, "--"}, cyArgs...),
+		}, nil
 	}
-	return nil, errors.New("the tool must be docker or yarn")
+
+	return nil, errors.New("the tool must be docker, yarn or npx yarn, npm, or npx")
 
 }
 
