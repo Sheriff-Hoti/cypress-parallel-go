@@ -4,8 +4,8 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -22,25 +22,34 @@ var rootCmd = &cobra.Command{
 cypress-parallel-go is a binary written in go that runs cypress specs in "parallel".`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		tool, tool_err := cmd.Flags().GetString("tool")
 		dir, dir_err := cmd.Flags().GetString("dir")
+		cyArgs, args_err := cmd.Flags().GetString("args")
 		if tool_err != nil {
-			log.Panic(tool_err)
+			return tool_err
 		}
 		if dir_err != nil {
-			log.Panic(dir_err)
+			return dir_err
+		}
+
+		if args_err != nil {
+			return args_err
 		}
 
 		if tool != "docker" && tool != "yarn" {
-			log.Fatal("invalid value for --tool or -t; must be 'docker' or 'yarn'")
+			return errors.New("invalid value for --tool or -t; must be 'docker' or 'yarn'")
 		}
 		start := time.Now()
 
-		core.Run(tool, dir)
+		if err := core.Run(tool, dir, cyArgs); err != nil {
+			return err
+		}
 
 		elapsed := time.Since(start)
 		fmt.Printf("The time it took %s", elapsed)
+
+		return nil
 	},
 }
 
@@ -63,8 +72,10 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	// rootCmd.Flags().BoolP("toggle", "tg", false, "Help message for toggle")
-	rootCmd.Flags().StringP("tool", "t", "", "specify the tool to execute the cypress run command(required)")
+	rootCmd.Flags().StringP("tool", "t", "", "specify the tool to execute your Cypress command(required)")
 	rootCmd.Flags().StringP("dir", "d", "", "Cypress specs directory (required)")
+	rootCmd.Flags().StringP("script", "s", "cypress run", "Your npm Cypress command")
+	rootCmd.Flags().StringP("args", "a", "cypress run", "Your npm Cypress command arguments")
 
 	// rootCmd.RegisterFlagCompletionFunc("tool", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	// 	return []string{"docker", "yarn"}, cobra.ShellCompDirectiveNoFileComp
