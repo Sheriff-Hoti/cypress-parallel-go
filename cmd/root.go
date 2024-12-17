@@ -26,6 +26,7 @@ cypress-parallel-go is a binary written in go that runs cypress specs in "parall
 		dir, dir_err := cmd.Flags().GetString("dir")
 		cyArgs, args_err := cmd.Flags().GetString("args")
 		script, script_err := cmd.Flags().GetString("script")
+		cores, cores_err := cmd.Flags().GetInt16("cores")
 
 		if tool_err != nil {
 			return tool_err
@@ -42,9 +43,13 @@ cypress-parallel-go is a binary written in go that runs cypress specs in "parall
 			return script_err
 		}
 
+		if cores_err != nil {
+			return cores_err
+		}
+
 		start := time.Now()
 
-		if err := core.Run(tool, dir, script, cyArgs); err != nil {
+		if err := core.Run(tool, dir, script, cyArgs, cores); err != nil {
 			return err
 		}
 
@@ -77,6 +82,7 @@ func init() {
 	rootCmd.Flags().StringP("tool", "t", "", "specify the tool to execute your Cypress command(required)")
 	rootCmd.Flags().StringP("dir", "d", "", "Cypress specs directory (required)")
 	rootCmd.Flags().StringP("script", "s", "cypress run", "Your npm Cypress command")
+	rootCmd.Flags().Int16P("cores", "c", 2, "Number of cores")
 	rootCmd.Flags().StringP("args", "a", "cypress run", "Your npm Cypress command arguments")
 
 	// rootCmd.RegisterFlagCompletionFunc("tool", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

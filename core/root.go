@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 )
@@ -34,8 +35,9 @@ func parallelCmdExec(wg *sync.WaitGroup, tool string, script string, spec string
 	cmd.Run()
 }
 
-func Run(tool string, dir string, script string, cyArgs string) error {
+func Run(tool string, dir string, script string, cyArgs string, cores int16) error {
 
+	runtime.GOMAXPROCS(int(cores))
 	//getting the folders which match the 'dir' pattern
 	matches, mError := filepath.Glob(dir)
 
@@ -97,6 +99,6 @@ func buildCommand(tool string, script string, specFile string, cyArgs []string) 
 		}, nil
 	}
 
-	return nil, errors.New("the tool must be docker, yarn or npx yarn, npm, or npx")
+	return nil, errors.New("the tool must be docker, yarn or npx yarn, npm")
 
 }
